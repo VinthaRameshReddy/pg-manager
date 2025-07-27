@@ -2155,34 +2155,44 @@
             roomSelect.innerHTML = '<option value="">Select Room</option>';
             
             if (!currentSession.currentPG || !currentSession.currentPG.floorPlan) {
+                const noRoomsOption = document.createElement('option');
+                noRoomsOption.value = '';
+                noRoomsOption.textContent = 'Configure rooms in Rooms tab first';
+                noRoomsOption.disabled = true;
+                roomSelect.appendChild(noRoomsOption);
                 return;
             }
             
+            let hasVacantBeds = false;
+            
             // Generate room options from floor plan
             Object.keys(currentSession.currentPG.floorPlan.rooms).forEach(floorNumber => {
-                currentSession.currentPG.floorPlan.rooms[floorNumber].forEach(room => {
-                    const occupiedBeds = room.occupied || 0;
-                    const totalBeds = room.beds || 0;
-                    const feePerPerson = room.feePerPerson || getFeeBySharing(room.sharing);
-                    
-                    // Add options for each available bed
-                    for (let bedNumber = 1; bedNumber <= totalBeds; bedNumber++) {
-                        if (bedNumber > occupiedBeds) { // Only show vacant beds
-                            const option = document.createElement('option');
-                            option.value = `${room.number}-${bedNumber}`;
-                            option.setAttribute('data-sharing', room.sharing);
-                            option.setAttribute('data-fee', feePerPerson);
-                            option.textContent = `Room ${room.number} - Bed ${bedNumber} (${room.sharing.charAt(0).toUpperCase() + room.sharing.slice(1)} Sharing - ₹${feePerPerson.toLocaleString()})`;
-                            roomSelect.appendChild(option);
+                if (currentSession.currentPG.floorPlan.rooms[floorNumber]) {
+                    currentSession.currentPG.floorPlan.rooms[floorNumber].forEach(room => {
+                        const occupiedBeds = room.occupied || 0;
+                        const totalBeds = room.beds || 0;
+                        const feePerPerson = room.feePerPerson || getFeeBySharing(room.sharing);
+                        
+                        // Add options for each available bed
+                        for (let bedNumber = 1; bedNumber <= totalBeds; bedNumber++) {
+                            if (bedNumber > occupiedBeds) { // Only show vacant beds
+                                hasVacantBeds = true;
+                                const option = document.createElement('option');
+                                option.value = `${room.number}-${bedNumber}`;
+                                option.setAttribute('data-sharing', room.sharing);
+                                option.setAttribute('data-fee', feePerPerson);
+                                option.textContent = `Room ${room.number} - Bed ${bedNumber} (${room.sharing.charAt(0).toUpperCase() + room.sharing.slice(1)} Sharing - ₹${feePerPerson.toLocaleString()})`;
+                                roomSelect.appendChild(option);
+                            }
                         }
-                    }
-                });
+                    });
+                }
             });
             
-            if (roomSelect.children.length === 1) {
+            if (!hasVacantBeds) {
                 const noRoomsOption = document.createElement('option');
                 noRoomsOption.value = '';
-                noRoomsOption.textContent = 'No vacant beds available - Configure rooms first';
+                noRoomsOption.textContent = 'No vacant beds available - All rooms full';
                 noRoomsOption.disabled = true;
                 roomSelect.appendChild(noRoomsOption);
             }
@@ -3206,8 +3216,8 @@
             defaultOption.textContent = 'Select due date';
             dueDateSelect.appendChild(defaultOption);
             
-            // Add available due date options (1st to 28th to avoid month-end issues)
-            const availableDates = [1, 5, 10, 15, 20, 25];
+            // Add available due date options (only 1st and 5th)
+            const availableDates = [1, 5];
             
             availableDates.forEach(date => {
                 const option = document.createElement('option');
@@ -3352,6 +3362,20 @@
                 }
             }
             
+            // Calculate advance payment allocation
+            const advanceAmount = parseInt(document.getElementById('advanceAmount').value);
+            let paidAmount = 0;
+            let remainingAmount = firstMonthFee;
+            
+            // If advance amount covers first month fee, allocate it
+            if (advanceAmount >= firstMonthFee) {
+                paidAmount = firstMonthFee;
+                remainingAmount = 0;
+            } else if (advanceAmount > 0) {
+                paidAmount = advanceAmount;
+                remainingAmount = firstMonthFee - advanceAmount;
+            }
+            
             const newTenant = {
                 id: tenants.length + 1,
                 name: document.getElementById('tenantName').value,
@@ -3365,18 +3389,46 @@
                 joiningDate: document.getElementById('joiningDate').value,
                 dueDate: selectedDueDate,
                 monthlyFee: monthlyFee,
-                advanceAmount: parseInt(document.getElementById('advanceAmount').value),
-                paidAmount: 0,
-                remainingAmount: firstMonthFee,
+                advanceAmount: advanceAmount,
+                paidAmount: paidAmount,
+                remainingAmount: remainingAmount,
                 status: 'active',
                 officeName: document.getElementById('officeName').value,
                 officeAddress: document.getElementById('officeAddress').value,
                 firstDueDate: firstDueDate.toISOString().split('T')[0],
                 daysCharged: daysToCharge,
-                firstMonthFee: firstMonthFee
+                firstMonthFee: firstMonthFee,
+                monthlyDues: [
+                    {
+                        month: firstDueDate.toISOString().slice(0, 7),
+                        amount: firstMonthFee,
+                        dueDate: firstDueDate.toISOString().split('T')[0],
+                        status: remainingAmount === 0 ? 'paid' : (paidAmount > 0 ? 'partial' : 'pending'),
+                        paidAmount: paidAmount,
+                        pendingAmount: remainingAmount
+                    }
+                ],
+                totalPending: remainingAmount
             };
             
             tenants.push(newTenant);
+            
+            // Update room occupancy in floor plan
+            const [roomNumber, bedNumber] = document.getElementById('roomSelection').value.split('-');
+            if (currentSession.currentPG && currentSession.currentPG.floorPlan) {
+                Object.keys(currentSession.currentPG.floorPlan.rooms).forEach(floorNumber => {
+                    if (currentSession.currentPG.floorPlan.rooms[floorNumber]) {
+                        currentSession.currentPG.floorPlan.rooms[floorNumber].forEach(room => {
+                            if (room.number === roomNumber) {
+                                room.occupied = (room.occupied || 0) + 1;
+                            }
+                        });
+                    }
+                });
+                
+                // Save updated session with room occupancy
+                localStorage.setItem('pgManagerSession', JSON.stringify(currentSession));
+            }
             
             // Save encrypted Aadhar image to database
             if (encryptedAadharImage) {
@@ -3398,9 +3450,25 @@
             
             loadTenants();
             updateDashboardStats();
+            populateRoomDropdown(); // Refresh room dropdown to remove occupied bed
+            displayRoomLayout(); // Refresh room layout display
             closeModal('addTenantModal');
             
-            alert(`Tenant added successfully!\nFirst month fee: ₹${firstMonthFee}\nFirst due date: ${firstDueDate.toLocaleDateString('en-IN')}\nRegular due date: ${selectedDueDate}${getOrdinalSuffix(selectedDueDate)} of every month`);
+            // Create detailed success message
+            let paymentStatus = '';
+            if (remainingAmount === 0) {
+                paymentStatus = `✅ FIRST MONTH FULLY PAID\n• Advance Amount: ₹${advanceAmount}\n• First Month Fee: ₹${firstMonthFee}\n• Status: PAID IN FULL`;
+            } else if (paidAmount > 0) {
+                paymentStatus = `🟡 FIRST MONTH PARTIALLY PAID\n• Advance Amount: ₹${advanceAmount}\n• First Month Fee: ₹${firstMonthFee}\n• Paid: ₹${paidAmount}\n• Remaining: ₹${remainingAmount}`;
+            } else {
+                paymentStatus = `⏳ FIRST MONTH PENDING\n• Advance Amount: ₹${advanceAmount}\n• First Month Fee: ₹${firstMonthFee}\n• Status: FULL AMOUNT PENDING`;
+            }
+            
+            alert(`🎉 TENANT ADDED SUCCESSFULLY!\n\n👤 ${newTenant.name}\n🏠 Room ${newTenant.room} - Bed ${newTenant.bed}\n📅 Joining Date: ${new Date(newTenant.joiningDate).toLocaleDateString('en-IN')}\n📅 First Due Date: ${firstDueDate.toLocaleDateString('en-IN')}\n📅 Regular Due Date: ${selectedDueDate}${getOrdinalSuffix(selectedDueDate)} of every month\n\n💰 PAYMENT DETAILS:\n${paymentStatus}\n\n🔄 Room occupancy updated automatically!`);
+            
+            // Clear form
+            document.getElementById('addTenantForm').reset();
+            document.getElementById('feeBreakdown').style.display = 'none';
         });
 
         document.getElementById('addPaymentForm').addEventListener('submit', function(e) {
@@ -3975,5 +4043,5 @@
         // Run once on page load to ensure current month dues are generated
         generateMonthlyDues();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'965bceb22757897b',t:'MTc1MzYxNTg1NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'965bef9fe3ddf599',t:'MTc1MzYxNzIwMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
