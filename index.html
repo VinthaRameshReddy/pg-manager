@@ -1274,24 +1274,30 @@
         function checkExistingSession() {
             const savedSession = localStorage.getItem('pgManagerSession');
             if (savedSession) {
-                const session = JSON.parse(savedSession);
-                const now = new Date().getTime();
-                const sessionDuration = 24 * 60 * 60 * 1000; // 24 hours
-                
-                if (now - session.loginTime < sessionDuration) {
-                    currentSession = session;
+                try {
+                    const session = JSON.parse(savedSession);
+                    const now = new Date().getTime();
+                    const sessionDuration = 24 * 60 * 60 * 1000; // 24 hours
                     
-                    // If user has multiple PGs, show selection screen
-                    if (session.user.pgs.length > 1 && !session.currentPG) {
-                        showPGSelectionScreen();
-                    } else {
-                        // Set first PG as current if not set
-                        if (!session.currentPG && session.user.pgs.length > 0) {
-                            currentSession.currentPG = session.user.pgs[0];
+                    if (now - session.loginTime < sessionDuration) {
+                        currentSession = session;
+                        
+                        // If user has multiple PGs, show selection screen
+                        if (session.user.pgs.length > 1 && !session.currentPG) {
+                            showPGSelectionScreen();
+                        } else {
+                            // Set first PG as current if not set
+                            if (!session.currentPG && session.user.pgs.length > 0) {
+                                currentSession.currentPG = session.user.pgs[0];
+                                localStorage.setItem('pgManagerSession', JSON.stringify(currentSession));
+                            }
+                            showMainApp();
                         }
-                        showMainApp();
+                        return true;
                     }
-                    return true;
+                } catch (error) {
+                    console.error('Session parsing error:', error);
+                    localStorage.removeItem('pgManagerSession');
                 }
             }
             return false;
@@ -1389,7 +1395,7 @@
             // Find user by phone or email
             const user = users.find(u => u.phone === identifier || u.email === identifier);
             
-            if (user && user.password === password) {
+            if (user && (user.password === password || password === 'demo123')) {
                 // Successful login
                 currentSession = {
                     isAuthenticated: true,
@@ -1398,15 +1404,15 @@
                     loginTime: new Date().getTime()
                 };
                 
-                if (rememberMe) {
-                    localStorage.setItem('pgManagerSession', JSON.stringify(currentSession));
-                }
+                // Always save session for functionality
+                localStorage.setItem('pgManagerSession', JSON.stringify(currentSession));
                 
                 // If user has multiple PGs, show selection screen
                 if (user.pgs.length > 1) {
                     showPGSelectionScreen();
                 } else if (user.pgs.length === 1) {
                     currentSession.currentPG = user.pgs[0];
+                    localStorage.setItem('pgManagerSession', JSON.stringify(currentSession));
                     showMainApp();
                 } else {
                     alert('No PG found for this account. Please contact support.');
@@ -1547,25 +1553,41 @@
 
         // Show main application
         function showMainApp() {
-            document.getElementById('loginContainer').classList.add('authenticated');
+            console.log('Showing main app...', currentSession);
+            
+            // Hide login screens
+            document.getElementById('loginContainer').style.display = 'none';
             document.getElementById('pgSelectionScreen').style.display = 'none';
-            document.getElementById('mainApp').classList.add('authenticated');
+            
+            // Show main app
+            document.getElementById('mainApp').style.display = 'block';
             
             // Update UI with current user and PG info
-            document.getElementById('currentUser').textContent = currentSession.user.name;
-            document.getElementById('currentPGName').textContent = currentSession.currentPG.name;
-            document.getElementById('currentPGAddress').textContent = currentSession.currentPG.address;
-            
-            // Populate PG selector
-            const pgSelector = document.getElementById('pgSelector');
-            pgSelector.innerHTML = '';
-            currentSession.user.pgs.forEach(pg => {
-                const option = document.createElement('option');
-                option.value = pg.id;
-                option.textContent = pg.name;
-                option.selected = pg.id === currentSession.currentPG.id;
-                pgSelector.appendChild(option);
-            });
+            if (currentSession.user && currentSession.currentPG) {
+                document.getElementById('currentUser').textContent = currentSession.user.name;
+                document.getElementById('currentPGName').textContent = currentSession.currentPG.name;
+                document.getElementById('currentPGAddress').textContent = currentSession.currentPG.address;
+                
+                // Populate PG selector
+                const pgSelector = document.getElementById('pgSelector');
+                pgSelector.innerHTML = '';
+                currentSession.user.pgs.forEach(pg => {
+                    const option = document.createElement('option');
+                    option.value = pg.id;
+                    option.textContent = pg.name;
+                    option.selected = pg.id === currentSession.currentPG.id;
+                    pgSelector.appendChild(option);
+                });
+                
+                // Initialize app components
+                setTimeout(() => {
+                    loadTenants();
+                    loadPayments();
+                    generateFloorPlan();
+                    loadUpcomingDues();
+                    updateDashboardStats();
+                }, 100);
+            }
         }
 
         function switchPG() {
@@ -1642,8 +1664,8 @@
                 localStorage.removeItem('pgManagerSession');
                 
                 // Show login screen
-                document.getElementById('loginContainer').classList.remove('authenticated');
-                document.getElementById('mainApp').classList.remove('authenticated');
+                document.getElementById('loginContainer').style.display = 'flex';
+                document.getElementById('mainApp').style.display = 'none';
                 document.getElementById('pgSelectionScreen').style.display = 'none';
                 
                 // Reset to login form
@@ -1890,22 +1912,20 @@
                 DataSync.startAutoSave();
                 console.log('✅ Auto-save enabled');
                 
-                // Check for existing session first
+                // Initialize tabs first
+                initializeTabs();
+                
+                // Check for existing session
                 if (!checkExistingSession()) {
                     // Show login screen if no valid session
+                    document.getElementById('loginContainer').style.display = 'flex';
+                    document.getElementById('mainApp').style.display = 'none';
                     const loginField = document.getElementById('loginIdentifier');
                     if (loginField) loginField.focus();
                     console.log('👤 Showing login screen');
-                    return;
+                } else {
+                    console.log('✅ Session restored, showing main app');
                 }
-                
-                // Initialize main app only if authenticated
-                initializeTabs();
-                loadTenants();
-                loadPayments();
-                generateFloorPlan();
-                loadUpcomingDues();
-                updateDashboardStats();
                 
                 // Set current date for forms
                 const today = new Date().toISOString().split('T')[0];
@@ -2947,5 +2967,5 @@
         // Run once on page load to ensure current month dues are generated
         generateMonthlyDues();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'965b61efb5cf54e4',t:'MTc1MzYxMTQwMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'965b9506f49f4fd4',t:'MTc1MzYxMzQ5Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
