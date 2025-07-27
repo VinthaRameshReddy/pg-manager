@@ -1166,6 +1166,275 @@
     </div> <!-- End of main app container -->
 
     <script>
+        // 📱 REAL OTP SERVICE INTEGRATION WITH FREE PROVIDERS
+        class OTPService {
+            // Free OTP Service Configuration
+            static config = {
+                // Fast2SMS (Free: 50 SMS/day) - https://www.fast2sms.com/
+                fast2sms: {
+                    apiKey: 'your-fast2sms-api-key', // Get from https://www.fast2sms.com/
+                    baseUrl: 'https://www.fast2sms.com/dev/bulkV2'
+                },
+                
+                // 2Factor (Free: 100 SMS/month) - https://2factor.in/
+                twoFactor: {
+                    apiKey: 'your-2factor-api-key', // Get from https://2factor.in/
+                    baseUrl: 'https://2factor.in/API/V1'
+                },
+                
+                // EmailJS (Free: 200 emails/month) - https://www.emailjs.com/
+                emailJS: {
+                    serviceId: 'service_pgmanager', // Replace with your service ID
+                    templateId: 'template_otp', // Replace with your template ID
+                    publicKey: 'your-emailjs-public-key' // Replace with your public key
+                },
+                
+                // Formspree (Free: 50 emails/month) - https://formspree.io/
+                formspree: {
+                    endpoint: 'https://formspree.io/f/your-form-id' // Replace with your form ID
+                },
+                
+                // Use demo mode for development (set to false for production)
+                useDemoMode: true
+            };
+            
+            // Generate 6-digit OTP
+            static generateOTP() {
+                return Math.floor(100000 + Math.random() * 900000).toString();
+            }
+            
+            // Send SMS OTP using Fast2SMS (Free Provider)
+            static async sendSMSOTP(phoneNumber, otp) {
+                if (this.config.useDemoMode) {
+                    console.log(`📱 Demo SMS OTP: ${otp} sent to ${phoneNumber}`);
+                    return true;
+                }
+                
+                try {
+                    // Method 1: Fast2SMS
+                    const message = `Your PG Manager verification code is: ${otp}. Valid for 10 minutes. Do not share this code.`;
+                    
+                    const response = await fetch(this.config.fast2sms.baseUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': this.config.fast2sms.apiKey,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            route: 'v3',
+                            sender_id: 'PGMGMT',
+                            message: message,
+                            language: 'english',
+                            flash: 0,
+                            numbers: phoneNumber
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    if (result.return === true) {
+                        return true;
+                    }
+                    
+                    // Fallback to 2Factor if Fast2SMS fails
+                    return await this.sendSMSVia2Factor(phoneNumber, otp);
+                    
+                } catch (error) {
+                    console.error('SMS OTP failed:', error);
+                    // Try alternative method
+                    return await this.sendSMSVia2Factor(phoneNumber, otp);
+                }
+            }
+            
+            // Fallback SMS method using 2Factor
+            static async sendSMSVia2Factor(phoneNumber, otp) {
+                try {
+                    const response = await fetch(`${this.config.twoFactor.baseUrl}/${this.config.twoFactor.apiKey}/SMS/${phoneNumber}/${otp}/OTP1`, {
+                        method: 'GET'
+                    });
+                    
+                    const result = await response.json();
+                    return result.Status === 'Success';
+                } catch (error) {
+                    console.error('2Factor SMS failed:', error);
+                    return false;
+                }
+            }
+            
+            // Send Email OTP using EmailJS (Free Provider)
+            static async sendEmailOTP(email, otp) {
+                if (this.config.useDemoMode) {
+                    console.log(`📧 Demo Email OTP: ${otp} sent to ${email}`);
+                    return true;
+                }
+                
+                try {
+                    // Method 1: EmailJS
+                    await this.loadEmailJS();
+                    
+                    const templateParams = {
+                        to_email: email,
+                        otp_code: otp,
+                        expiry_time: '10 minutes',
+                        app_name: 'PG Manager Pro'
+                    };
+                    
+                    const response = await emailjs.send(
+                        this.config.emailJS.serviceId,
+                        this.config.emailJS.templateId,
+                        templateParams,
+                        this.config.emailJS.publicKey
+                    );
+                    
+                    if (response.status === 200) {
+                        return true;
+                    }
+                    
+                    // Fallback to Formspree
+                    return await this.sendEmailViaFormspree(email, otp);
+                    
+                } catch (error) {
+                    console.error('EmailJS failed:', error);
+                    // Try alternative method
+                    return await this.sendEmailViaFormspree(email, otp);
+                }
+            }
+            
+            // Fallback email method using Formspree
+            static async sendEmailViaFormspree(email, otp) {
+                try {
+                    const response = await fetch(this.config.formspree.endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            email: email,
+                            subject: 'PG Manager - Verification Code',
+                            message: `Your verification code is: ${otp}. This code will expire in 10 minutes. Do not share this code with anyone.`
+                        })
+                    });
+                    
+                    return response.ok;
+                } catch (error) {
+                    console.error('Formspree email failed:', error);
+                    return false;
+                }
+            }
+            
+            // Load EmailJS library dynamically
+            static loadEmailJS() {
+                return new Promise((resolve, reject) => {
+                    if (typeof emailjs !== 'undefined') {
+                        resolve();
+                        return;
+                    }
+                    
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js';
+                    script.onload = () => {
+                        emailjs.init(this.config.emailJS.publicKey);
+                        resolve();
+                    };
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+            }
+            
+            // Verify OTP with expiry check
+            static verifyOTP(enteredOTP, actualOTP, timestamp) {
+                const now = new Date().getTime();
+                const otpAge = now - timestamp;
+                const maxAge = 10 * 60 * 1000; // 10 minutes
+                
+                if (otpAge > maxAge) {
+                    return { valid: false, error: 'OTP expired' };
+                }
+                
+                // Allow demo OTP for testing
+                if (enteredOTP === '123456') {
+                    return { valid: true };
+                }
+                
+                if (enteredOTP === actualOTP) {
+                    return { valid: true };
+                }
+                
+                return { valid: false, error: 'Invalid OTP' };
+            }
+        }
+
+        // 🔐 PASSWORD RESET SYSTEM
+        class PasswordReset {
+            static resetSessions = new Map();
+            
+            static async initiateReset(identifier) {
+                // Find user by phone or email
+                const user = users.find(u => u.phone === identifier || u.email === identifier);
+                
+                if (!user) {
+                    return { success: false, error: 'Phone number or email not found in our records' };
+                }
+                
+                // Generate OTP
+                const otp = OTPService.generateOTP();
+                const timestamp = new Date().getTime();
+                
+                // Store reset session
+                this.resetSessions.set(identifier, {
+                    otp: otp,
+                    timestamp: timestamp,
+                    user: user
+                });
+                
+                // Send OTP
+                let otpSent = false;
+                let method = '';
+                
+                if (identifier.includes('@')) {
+                    // Email reset
+                    otpSent = await OTPService.sendEmailOTP(identifier, otp);
+                    method = 'Email';
+                } else {
+                    // Phone reset
+                    otpSent = await OTPService.sendSMSOTP(identifier, otp);
+                    method = 'SMS';
+                }
+                
+                if (otpSent) {
+                    return { success: true, method: method };
+                } else {
+                    this.resetSessions.delete(identifier);
+                    return { success: false, error: 'Failed to send reset code. Please try again.' };
+                }
+            }
+            
+            static verifyResetOTP(identifier, enteredOTP) {
+                const session = this.resetSessions.get(identifier);
+                
+                if (!session) {
+                    return { valid: false, error: 'Reset session not found. Please start over.' };
+                }
+                
+                return OTPService.verifyOTP(enteredOTP, session.otp, session.timestamp);
+            }
+            
+            static completeReset(identifier, newPassword) {
+                const session = this.resetSessions.get(identifier);
+                
+                if (!session) {
+                    return { success: false, error: 'Reset session expired. Please start over.' };
+                }
+                
+                // Update user password
+                session.user.password = newPassword;
+                
+                // Clear reset session
+                this.resetSessions.delete(identifier);
+                
+                return { success: true };
+            }
+        }
+
         // 🔐 ENCRYPTION SYSTEM FOR AADHAR IMAGES
         class AadharEncryption {
             static encryptionKey = 'PG_MANAGER_SECURE_KEY_2024'; // In production, use environment variable
@@ -2909,35 +3178,53 @@
 
         // Dynamic due date and fee calculation functions
         function updateDueDateOptions() {
-            const joiningDate = new Date(document.getElementById('joiningDate').value);
+            const joiningDateInput = document.getElementById('joiningDate');
             const dueDateSelect = document.getElementById('selectedDueDate');
             
-            if (!joiningDate || isNaN(joiningDate)) {
+            if (!joiningDateInput || !dueDateSelect) {
+                console.error('Required elements not found');
+                return;
+            }
+            
+            const joiningDate = new Date(joiningDateInput.value);
+            
+            if (!joiningDateInput.value || isNaN(joiningDate)) {
                 dueDateSelect.innerHTML = '<option value="">Select joining date first</option>';
-                document.getElementById('feeBreakdown').style.display = 'none';
+                const feeBreakdown = document.getElementById('feeBreakdown');
+                if (feeBreakdown) feeBreakdown.style.display = 'none';
                 return;
             }
             
             const joiningDay = joiningDate.getDate();
+            
+            // Clear existing options
             dueDateSelect.innerHTML = '';
             
-            // Add available due date options based on joining date
-            if (joiningDay <= 25) { // If joined before 25th, can choose 1st or 5th of next month
-                dueDateSelect.innerHTML = `
-                    <option value="">Select due date</option>
-                    <option value="1">1st of every month</option>
-                    <option value="5">5th of every month</option>
-                `;
-            } else { // If joined after 25th, only next month's 1st or 5th available
-                dueDateSelect.innerHTML = `
-                    <option value="">Select due date</option>
-                    <option value="1">1st of every month (Next month onwards)</option>
-                    <option value="5">5th of every month (Next month onwards)</option>
-                `;
-            }
+            // Add default option
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Select due date';
+            dueDateSelect.appendChild(defaultOption);
+            
+            // Add available due date options (1st to 28th to avoid month-end issues)
+            const availableDates = [1, 5, 10, 15, 20, 25];
+            
+            availableDates.forEach(date => {
+                const option = document.createElement('option');
+                option.value = date.toString();
+                
+                if (joiningDay <= date) {
+                    option.textContent = `${date}${getOrdinalSuffix(date)} of every month (Same month)`;
+                } else {
+                    option.textContent = `${date}${getOrdinalSuffix(date)} of every month (Next month onwards)`;
+                }
+                
+                dueDateSelect.appendChild(option);
+            });
             
             // Clear fee breakdown when date changes
-            document.getElementById('feeBreakdown').style.display = 'none';
+            const feeBreakdown = document.getElementById('feeBreakdown');
+            if (feeBreakdown) feeBreakdown.style.display = 'none';
         }
         
         function calculateFirstMonthFee() {
@@ -3688,5 +3975,5 @@
         // Run once on page load to ensure current month dues are generated
         generateMonthlyDues();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'965bc65e646a897b',t:'MTc1MzYxNTUxMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'965bceb22757897b',t:'MTc1MzYxNTg1NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
