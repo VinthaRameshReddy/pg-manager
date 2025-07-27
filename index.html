@@ -82,7 +82,7 @@
                         <input type="checkbox" id="rememberMe" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
                         <label for="rememberMe" class="ml-2 block text-sm text-gray-700">Remember me</label>
                     </div>
-                    <button type="button" onclick="showForgotPassword()" class="text-sm text-indigo-600 hover:text-indigo-500">
+                    <button type="button" onclick="openForgotPasswordModal()" class="text-sm text-indigo-600 hover:text-indigo-500">
                         Forgot password?
                     </button>
                 </div>
@@ -367,16 +367,17 @@
                     </div>
                 </div>
                 
-                <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
+                <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500 cursor-pointer hover:bg-blue-50 transition-colors" onclick="showVacantBeds()">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-gray-600 text-sm">Vacant Beds</p>
-                            <p class="text-3xl font-bold text-blue-600" id="vacantBeds">8</p>
+                            <p class="text-3xl font-bold text-blue-600" id="vacantBeds">0</p>
                         </div>
                         <div class="bg-blue-100 p-3 rounded-full">
                             <span class="text-2xl">🛏️</span>
                         </div>
                     </div>
+                    <div class="mt-2 text-xs text-blue-600">Click to view details</div>
                 </div>
                 
                 <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-yellow-500">
@@ -692,10 +693,31 @@
                 <div class="bg-white rounded-xl shadow-lg p-6">
                     <h3 class="text-xl font-bold text-gray-800 mb-4">Fee Settings</h3>
                     <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Default Monthly Fee</label>
-                            <input type="number" value="7000" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h4 class="font-semibold text-blue-800 mb-3">💰 Dynamic Fee Structure by Sharing Type</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Single Occupancy</label>
+                                    <input type="number" id="singleFee" value="9000" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Double Sharing</label>
+                                    <input type="number" id="doubleFee" value="7000" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Triple Sharing</label>
+                                    <input type="number" id="tripleFee" value="6000" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Quad Sharing</label>
+                                    <input type="number" id="quadFee" value="5000" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                            </div>
+                            <div class="mt-3 text-xs text-blue-600">
+                                💡 Fees are automatically applied based on room sharing type selection
+                            </div>
                         </div>
+                        
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Security Deposit</label>
                             <input type="number" value="3000" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
@@ -787,21 +809,23 @@
                         
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Room Selection</label>
-                            <select id="roomSelection" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            <select id="roomSelection" required onchange="updateSharingTypeFromRoom()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                                 <option value="">Select Room</option>
-                                <option value="101-1">Room 101 - Bed 1</option>
-                                <option value="101-2">Room 101 - Bed 2</option>
-                                <option value="102-1">Room 102 - Bed 1</option>
+                                <!-- Room options will be populated dynamically -->
                             </select>
+                            <div class="mt-1 text-xs text-gray-500">
+                                💡 Configure rooms in the Rooms tab if no options are available
+                            </div>
                         </div>
                         
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Sharing Type</label>
-                            <select id="sharingType" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                                <option value="single">Single</option>
-                                <option value="double">Double Sharing</option>
-                                <option value="triple">Triple Sharing</option>
-                                <option value="quad">Quad Sharing</option>
+                            <select id="sharingType" onchange="updateFeeBasedOnSharing()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <option value="">Select Sharing Type</option>
+                                <option value="single">Single Occupancy (₹9,000/month)</option>
+                                <option value="double">Double Sharing (₹7,000/month)</option>
+                                <option value="triple">Triple Sharing (₹6,000/month)</option>
+                                <option value="quad">Quad Sharing (₹5,000/month)</option>
                             </select>
                         </div>
                         
@@ -963,6 +987,114 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotPasswordModal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-2xl font-bold text-gray-800">🔐 Reset Password</h3>
+                    <button onclick="closeForgotPasswordModal()" class="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
+                </div>
+            </div>
+            
+            <!-- Step 1: Enter Phone/Email -->
+            <div id="forgotStep1" class="p-6">
+                <div class="text-center mb-6">
+                    <div class="text-4xl mb-4">🔑</div>
+                    <p class="text-gray-600">Enter your phone number or email to receive reset code</p>
+                </div>
+                
+                <form id="forgotPasswordForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number or Email</label>
+                        <input type="text" id="forgotIdentifier" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                               placeholder="Enter phone or email">
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition-colors font-semibold">
+                        📱 Send Reset Code
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Step 2: Verify OTP -->
+            <div id="forgotStep2" class="p-6" style="display: none;">
+                <div class="text-center mb-6">
+                    <div class="text-4xl mb-4">🔐</div>
+                    <h4 class="text-lg font-semibold text-gray-800">Verify Reset Code</h4>
+                    <p class="text-gray-600" id="forgotOtpMessage">Code sent to your device</p>
+                </div>
+                
+                <form id="forgotOtpForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Enter 6-Digit Code</label>
+                        <input type="text" id="forgotOtpCode" required pattern="[0-9]{6}" maxlength="6"
+                               class="w-full px-4 py-3 text-center text-2xl font-bold border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                               placeholder="123456">
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold">
+                        ✅ Verify Code
+                    </button>
+                </form>
+                
+                <div class="text-center mt-4">
+                    <button onclick="resendForgotOTP()" class="text-indigo-600 hover:text-indigo-500 text-sm">
+                        📱 Resend Code
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Step 3: Set New Password -->
+            <div id="forgotStep3" class="p-6" style="display: none;">
+                <div class="text-center mb-6">
+                    <div class="text-4xl mb-4">🔒</div>
+                    <h4 class="text-lg font-semibold text-gray-800">Set New Password</h4>
+                    <p class="text-gray-600">Create a strong password for your account</p>
+                </div>
+                
+                <form id="newPasswordForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                        <input type="password" id="newPassword" required minlength="6"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                               placeholder="Minimum 6 characters">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                        <input type="password" id="confirmPassword" required minlength="6"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                               placeholder="Re-enter password">
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold">
+                        🔐 Update Password
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vacant Beds Modal -->
+    <div id="vacantBedsModal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full mx-4 max-h-screen overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-2xl font-bold text-gray-800">🛏️ Vacant Beds Details</h3>
+                    <button onclick="closeModal('vacantBedsModal')" class="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div id="vacantBedsContent">
+                    <!-- Vacant beds content will be populated here -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1429,7 +1561,7 @@
         });
 
         // Phone signup form handler
-        document.getElementById('phoneSignupSubmit').addEventListener('submit', function(e) {
+        document.getElementById('phoneSignupSubmit').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const phone = document.getElementById('phoneSignupPhone').value;
@@ -1446,6 +1578,10 @@
                 return;
             }
             
+            // Generate and send real OTP
+            const otp = OTPService.generateOTP();
+            const timestamp = new Date().getTime();
+            
             // Store signup data
             signupData.userData = {
                 name: document.getElementById('phoneSignupName').value,
@@ -1455,18 +1591,26 @@
                 pgName: document.getElementById('phoneSignupPGName').value,
                 pgAddress: document.getElementById('phoneSignupPGAddress').value
             };
+            signupData.otpCode = otp;
+            signupData.otpTimestamp = timestamp;
             
-            // Show OTP form
-            document.getElementById('phoneSignupForm').style.display = 'none';
-            document.getElementById('otpVerificationForm').style.display = 'block';
-            document.getElementById('otpSentMessage').textContent = `OTP sent to ${phone}`;
+            // Send OTP via SMS
+            const otpSent = await OTPService.sendSMSOTP(phone, otp);
             
-            // Simulate OTP sending
-            alert(`📱 OTP SENT!\n\nA 6-digit OTP has been sent to ${phone}\n\nDemo OTP: 123456`);
+            if (otpSent) {
+                // Show OTP form
+                document.getElementById('phoneSignupForm').style.display = 'none';
+                document.getElementById('otpVerificationForm').style.display = 'block';
+                document.getElementById('otpSentMessage').textContent = `OTP sent to ${phone}`;
+                
+                alert(`📱 OTP SENT!\n\nA 6-digit verification code has been sent to ${phone}\n\nPlease check your messages and enter the code.`);
+            } else {
+                alert('❌ Failed to send OTP. Please check your phone number and try again.');
+            }
         });
 
         // Email signup form handler
-        document.getElementById('emailSignupSubmit').addEventListener('submit', function(e) {
+        document.getElementById('emailSignupSubmit').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const email = document.getElementById('emailSignupEmail').value;
@@ -1477,6 +1621,10 @@
                 return;
             }
             
+            // Generate and send real OTP
+            const otp = OTPService.generateOTP();
+            const timestamp = new Date().getTime();
+            
             // Store signup data
             signupData.userData = {
                 name: document.getElementById('emailSignupName').value,
@@ -1486,14 +1634,22 @@
                 pgName: document.getElementById('emailSignupPGName').value,
                 pgAddress: document.getElementById('emailSignupPGAddress').value
             };
+            signupData.otpCode = otp;
+            signupData.otpTimestamp = timestamp;
             
-            // Show OTP form
-            document.getElementById('emailSignupForm').style.display = 'none';
-            document.getElementById('otpVerificationForm').style.display = 'block';
-            document.getElementById('otpSentMessage').textContent = `OTP sent to ${email}`;
+            // Send OTP via Email
+            const otpSent = await OTPService.sendEmailOTP(email, otp);
             
-            // Simulate OTP sending
-            alert(`📧 OTP SENT!\n\nA 6-digit OTP has been sent to ${email}\n\nDemo OTP: 123456`);
+            if (otpSent) {
+                // Show OTP form
+                document.getElementById('emailSignupForm').style.display = 'none';
+                document.getElementById('otpVerificationForm').style.display = 'block';
+                document.getElementById('otpSentMessage').textContent = `OTP sent to ${email}`;
+                
+                alert(`📧 OTP SENT!\n\nA 6-digit verification code has been sent to ${email}\n\nPlease check your inbox and enter the code.`);
+            } else {
+                alert('❌ Failed to send OTP. Please check your email address and try again.');
+            }
         });
 
         // OTP verification form handler
@@ -1502,8 +1658,11 @@
             
             const enteredOTP = document.getElementById('otpCode').value;
             
-            if (enteredOTP === signupData.otpCode) {
-                // Create new user
+            // Verify OTP with expiry check
+            const verification = OTPService.verifyOTP(enteredOTP, signupData.otpCode, signupData.otpTimestamp);
+            
+            if (verification.valid) {
+                // Create new user with dynamic floor plan
                 const newUser = {
                     id: users.length + 1,
                     name: signupData.userData.name,
@@ -1515,11 +1674,19 @@
                             id: 1,
                             name: signupData.userData.pgName,
                             address: signupData.userData.pgAddress,
-                            contact: signupData.userData.phone || "Not provided",
+                            contact: signupData.userData.phone || signupData.userData.email || "Not provided",
                             floors: 3,
                             defaultFee: 7000,
                             securityDeposit: 3000,
-                            isActive: true
+                            isActive: true,
+                            floorPlan: {
+                                floors: 3,
+                                rooms: {
+                                    1: [],
+                                    2: [],
+                                    3: []
+                                }
+                            }
                         }
                     ]
                 };
@@ -1538,17 +1705,139 @@
                 
                 showMainApp();
                 
-                alert(`🎉 ACCOUNT CREATED SUCCESSFULLY!\n\nWelcome ${newUser.name}!\nYour PG "${newUser.pgs[0].name}" is ready to manage.\n\n🔐 Security Features:\n• Aadhar images are encrypted\n• Secure database storage\n• Session management\n\n💾 Data Storage:\n• Local: IndexedDB (demo)\n• Production: Firebase/Supabase\n• Free hosting: Netlify/Vercel`);
+                alert(`🎉 ACCOUNT CREATED SUCCESSFULLY!\n\nWelcome ${newUser.name}!\nYour PG "${newUser.pgs[0].name}" is ready to manage.\n\n✅ Next Steps:\n1. Configure your floor plan in Rooms tab\n2. Add rooms with sharing types\n3. Set custom fees per room type\n4. Start adding tenants\n\n🔐 Security Features:\n• Real OTP verification\n• Encrypted data storage\n• Secure session management`);
                 
             } else {
-                alert('❌ Invalid OTP!\n\nPlease enter the correct 6-digit OTP.\n\nDemo OTP: 123456');
+                if (verification.error === 'OTP expired') {
+                    alert('❌ OTP EXPIRED!\n\nThe verification code has expired (10 minutes limit).\nPlease request a new code.');
+                } else {
+                    alert('❌ INVALID OTP!\n\nPlease enter the correct 6-digit verification code.\nCheck your SMS/Email for the latest code.');
+                }
             }
         });
 
-        function resendOTP() {
+        async function resendOTP() {
             const contact = signupData.userData.phone || signupData.userData.email;
             const method = signupData.userData.phone ? 'SMS' : 'Email';
-            alert(`📱 OTP RESENT!\n\nA new OTP has been sent to ${contact} via ${method}\n\nDemo OTP: 123456`);
+            
+            // Generate new OTP
+            const otp = OTPService.generateOTP();
+            const timestamp = new Date().getTime();
+            
+            signupData.otpCode = otp;
+            signupData.otpTimestamp = timestamp;
+            
+            // Send new OTP
+            let otpSent = false;
+            if (signupData.userData.phone) {
+                otpSent = await OTPService.sendSMSOTP(contact, otp);
+            } else {
+                otpSent = await OTPService.sendEmailOTP(contact, otp);
+            }
+            
+            if (otpSent) {
+                alert(`📱 OTP RESENT!\n\nA new verification code has been sent to ${contact} via ${method}\n\nPlease check your ${method === 'SMS' ? 'messages' : 'inbox'}.`);
+            } else {
+                alert('❌ Failed to resend OTP. Please try again.');
+            }
+        }
+
+        // Forgot Password Functions
+        function openForgotPasswordModal() {
+            document.getElementById('forgotPasswordModal').classList.add('active');
+            document.getElementById('forgotStep1').style.display = 'block';
+            document.getElementById('forgotStep2').style.display = 'none';
+            document.getElementById('forgotStep3').style.display = 'none';
+        }
+
+        function closeForgotPasswordModal() {
+            document.getElementById('forgotPasswordModal').classList.remove('active');
+            // Reset form
+            document.getElementById('forgotPasswordForm').reset();
+            document.getElementById('forgotOtpForm').reset();
+            document.getElementById('newPasswordForm').reset();
+        }
+
+        // Forgot password form handler
+        document.getElementById('forgotPasswordForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const identifier = document.getElementById('forgotIdentifier').value;
+            
+            const result = await PasswordReset.initiateReset(identifier);
+            
+            if (result.success) {
+                document.getElementById('forgotStep1').style.display = 'none';
+                document.getElementById('forgotStep2').style.display = 'block';
+                document.getElementById('forgotOtpMessage').textContent = `Reset code sent to ${identifier} via ${result.method}`;
+                
+                alert(`🔐 RESET CODE SENT!\n\nA 6-digit reset code has been sent to ${identifier} via ${result.method}\n\nPlease check your ${result.method === 'SMS' ? 'messages' : 'inbox'}.`);
+            } else {
+                alert(`❌ ${result.error}\n\nPlease check your phone number or email address.`);
+            }
+        });
+
+        // Forgot OTP verification handler
+        document.getElementById('forgotOtpForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const identifier = document.getElementById('forgotIdentifier').value;
+            const enteredOTP = document.getElementById('forgotOtpCode').value;
+            
+            const verification = PasswordReset.verifyResetOTP(identifier, enteredOTP);
+            
+            if (verification.valid) {
+                document.getElementById('forgotStep2').style.display = 'none';
+                document.getElementById('forgotStep3').style.display = 'block';
+                
+                alert('✅ CODE VERIFIED!\n\nPlease set your new password.');
+            } else {
+                if (verification.error === 'OTP expired') {
+                    alert('❌ CODE EXPIRED!\n\nThe reset code has expired (10 minutes limit).\nPlease request a new code.');
+                } else {
+                    alert('❌ INVALID CODE!\n\nPlease enter the correct 6-digit reset code.');
+                }
+            }
+        });
+
+        // New password form handler
+        document.getElementById('newPasswordForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const identifier = document.getElementById('forgotIdentifier').value;
+            
+            if (newPassword !== confirmPassword) {
+                alert('❌ PASSWORDS DO NOT MATCH!\n\nPlease ensure both password fields are identical.');
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                alert('❌ PASSWORD TOO SHORT!\n\nPassword must be at least 6 characters long.');
+                return;
+            }
+            
+            const result = PasswordReset.completeReset(identifier, newPassword);
+            
+            if (result.success) {
+                closeForgotPasswordModal();
+                alert('🎉 PASSWORD RESET SUCCESSFUL!\n\nYour password has been updated successfully.\nYou can now login with your new password.');
+            } else {
+                alert(`❌ ${result.error}\n\nPlease try the reset process again.`);
+            }
+        });
+
+        async function resendForgotOTP() {
+            const identifier = document.getElementById('forgotIdentifier').value;
+            
+            const result = await PasswordReset.initiateReset(identifier);
+            
+            if (result.success) {
+                alert(`🔐 RESET CODE RESENT!\n\nA new reset code has been sent to ${identifier} via ${result.method}`);
+            } else {
+                alert('❌ Failed to resend reset code. Please try again.');
+            }
         }
 
         // Show main application
@@ -1581,12 +1870,52 @@
                 
                 // Initialize app components
                 setTimeout(() => {
+                    populateRoomDropdown();
                     loadTenants();
                     loadPayments();
                     generateFloorPlan();
                     loadUpcomingDues();
                     updateDashboardStats();
                 }, 100);
+            }
+        }
+
+        // Populate room dropdown dynamically
+        function populateRoomDropdown() {
+            const roomSelect = document.getElementById('roomSelection');
+            roomSelect.innerHTML = '<option value="">Select Room</option>';
+            
+            if (!currentSession.currentPG || !currentSession.currentPG.floorPlan) {
+                return;
+            }
+            
+            // Generate room options from floor plan
+            Object.keys(currentSession.currentPG.floorPlan.rooms).forEach(floorNumber => {
+                currentSession.currentPG.floorPlan.rooms[floorNumber].forEach(room => {
+                    const occupiedBeds = room.occupied || 0;
+                    const totalBeds = room.beds || 0;
+                    const feePerPerson = room.feePerPerson || getFeeBySharing(room.sharing);
+                    
+                    // Add options for each available bed
+                    for (let bedNumber = 1; bedNumber <= totalBeds; bedNumber++) {
+                        if (bedNumber > occupiedBeds) { // Only show vacant beds
+                            const option = document.createElement('option');
+                            option.value = `${room.number}-${bedNumber}`;
+                            option.setAttribute('data-sharing', room.sharing);
+                            option.setAttribute('data-fee', feePerPerson);
+                            option.textContent = `Room ${room.number} - Bed ${bedNumber} (${room.sharing.charAt(0).toUpperCase() + room.sharing.slice(1)} Sharing - ₹${feePerPerson.toLocaleString()})`;
+                            roomSelect.appendChild(option);
+                        }
+                    }
+                });
+            });
+            
+            if (roomSelect.children.length === 1) {
+                const noRoomsOption = document.createElement('option');
+                noRoomsOption.value = '';
+                noRoomsOption.textContent = 'No vacant beds available - Configure rooms first';
+                noRoomsOption.disabled = true;
+                roomSelect.appendChild(noRoomsOption);
             }
         }
 
@@ -1758,6 +2087,19 @@
             }
         }
 
+        // 💰 DYNAMIC FEE STRUCTURE BASED ON SHARING TYPE
+        const feeStructure = {
+            single: 9000,    // Single occupancy - highest fee
+            double: 7000,    // Double sharing
+            triple: 6000,    // Triple sharing  
+            quad: 5000       // Quad sharing - lowest fee
+        };
+
+        // Function to get fee based on sharing type
+        function getFeeBySharing(sharingType) {
+            return feeStructure[sharingType] || 7000; // Default to 7000 if type not found
+        }
+
         // Sample data (will be replaced by database data)
         let tenants = [
             {
@@ -1773,29 +2115,29 @@
                 sharingType: "double",
                 joiningDate: "2024-01-10", // Joined 10th Jan
                 dueDate: 5, // Selected 5th as due date
-                monthlyFee: 7000,
+                monthlyFee: getFeeBySharing("double"), // ₹7000 for double sharing
                 advanceAmount: 3000,
                 status: "active",
                 officeName: "Tech Solutions",
                 officeAddress: "IT Park, Sector 5",
                 firstDueDate: "2024-02-05", // First due was 5th Feb (next month since joined after 5th)
                 daysCharged: 27, // 22 days in Jan (31-10+1) + 5 days in Feb = 27 days
-                firstMonthFee: 6300, // (7000/30) * 27 = 6300
+                firstMonthFee: Math.round((getFeeBySharing("double") / 30) * 27), // (7000/30) * 27 = 6300
                 feeBreakdown: {
                     joiningDay: 10,
                     selectedDueDate: 5,
                     firstDueDate: "2024-02-05",
                     daysCharged: 27,
-                    firstMonthFee: 6300,
-                    calculation: "₹7000 ÷ 30 days × 27 days = ₹6300",
+                    firstMonthFee: Math.round((getFeeBySharing("double") / 30) * 27),
+                    calculation: `₹${getFeeBySharing("double")} ÷ 30 days × 27 days = ₹${Math.round((getFeeBySharing("double") / 30) * 27)}`,
                     note: "Since joined on 10th Jan (after 5th), first due date was 5th Feb. Charged for remaining 22 days of Jan + 5 days of Feb."
                 },
                 monthlyDues: [
-                    { month: "2024-02", amount: 6300, dueDate: "2024-02-05", status: "partial", paidAmount: 5000, pendingAmount: 1300 },
-                    { month: "2024-03", amount: 7000, dueDate: "2024-03-05", status: "pending", paidAmount: 0, pendingAmount: 7000 },
-                    { month: "2024-04", amount: 7000, dueDate: "2024-04-05", status: "pending", paidAmount: 0, pendingAmount: 7000 }
+                    { month: "2024-02", amount: Math.round((getFeeBySharing("double") / 30) * 27), dueDate: "2024-02-05", status: "partial", paidAmount: 5000, pendingAmount: Math.round((getFeeBySharing("double") / 30) * 27) - 5000 },
+                    { month: "2024-03", amount: getFeeBySharing("double"), dueDate: "2024-03-05", status: "pending", paidAmount: 0, pendingAmount: getFeeBySharing("double") },
+                    { month: "2024-04", amount: getFeeBySharing("double"), dueDate: "2024-04-05", status: "pending", paidAmount: 0, pendingAmount: getFeeBySharing("double") }
                 ],
-                totalPending: 15300, // 1300 + 7000 + 7000
+                totalPending: (Math.round((getFeeBySharing("double") / 30) * 27) - 5000) + getFeeBySharing("double") + getFeeBySharing("double"),
                 lastPaymentDate: "2024-02-15"
             },
             {
@@ -1811,17 +2153,17 @@
                 sharingType: "triple",
                 joiningDate: "2024-02-01",
                 dueDate: 5,
-                monthlyFee: 6500,
+                monthlyFee: getFeeBySharing("triple"), // ₹6000 for triple sharing
                 advanceAmount: 3000,
                 status: "active",
                 officeName: "Design Institute",
                 officeAddress: "Creative Hub, Downtown",
                 monthlyDues: [
-                    { month: "2024-02", amount: 6500, dueDate: "2024-02-05", status: "paid", paidAmount: 6500, pendingAmount: 0 },
-                    { month: "2024-03", amount: 6500, dueDate: "2024-03-05", status: "paid", paidAmount: 6500, pendingAmount: 0 },
-                    { month: "2024-04", amount: 6500, dueDate: "2024-04-05", status: "pending", paidAmount: 0, pendingAmount: 6500 }
+                    { month: "2024-02", amount: getFeeBySharing("triple"), dueDate: "2024-02-05", status: "paid", paidAmount: getFeeBySharing("triple"), pendingAmount: 0 },
+                    { month: "2024-03", amount: getFeeBySharing("triple"), dueDate: "2024-03-05", status: "paid", paidAmount: getFeeBySharing("triple"), pendingAmount: 0 },
+                    { month: "2024-04", amount: getFeeBySharing("triple"), dueDate: "2024-04-05", status: "pending", paidAmount: 0, pendingAmount: getFeeBySharing("triple") }
                 ],
-                totalPending: 6500,
+                totalPending: getFeeBySharing("triple"),
                 lastPaymentDate: "2024-03-05"
             },
             {
@@ -1837,17 +2179,17 @@
                 sharingType: "triple",
                 joiningDate: "2024-01-15",
                 dueDate: 1,
-                monthlyFee: 6800,
+                monthlyFee: getFeeBySharing("triple"), // ₹6000 for triple sharing
                 advanceAmount: 3000,
                 status: "active",
                 officeName: "Marketing Corp",
                 officeAddress: "Business District",
                 monthlyDues: [
-                    { month: "2024-02", amount: 6800, dueDate: "2024-02-01", status: "overdue", paidAmount: 0, pendingAmount: 6800 },
-                    { month: "2024-03", amount: 6800, dueDate: "2024-03-01", status: "overdue", paidAmount: 0, pendingAmount: 6800 },
-                    { month: "2024-04", amount: 6800, dueDate: "2024-04-01", status: "overdue", paidAmount: 0, pendingAmount: 6800 }
+                    { month: "2024-02", amount: getFeeBySharing("triple"), dueDate: "2024-02-01", status: "overdue", paidAmount: 0, pendingAmount: getFeeBySharing("triple") },
+                    { month: "2024-03", amount: getFeeBySharing("triple"), dueDate: "2024-03-01", status: "overdue", paidAmount: 0, pendingAmount: getFeeBySharing("triple") },
+                    { month: "2024-04", amount: getFeeBySharing("triple"), dueDate: "2024-04-01", status: "overdue", paidAmount: 0, pendingAmount: getFeeBySharing("triple") }
                 ],
-                totalPending: 20400, // 3 months unpaid
+                totalPending: getFeeBySharing("triple") * 3, // 3 months unpaid
                 lastPaymentDate: null
             }
         ];
@@ -1871,28 +2213,10 @@
             }
         ];
 
+        // Dynamic floor plan system (starts empty for new PGs)
         let floorPlan = {
-            floors: 3,
-            rooms: {
-                1: [
-                    { number: "101", beds: 2, sharing: "double", occupied: 1 },
-                    { number: "102", beds: 3, sharing: "triple", occupied: 2 },
-                    { number: "103", beds: 1, sharing: "single", occupied: 0 },
-                    { number: "104", beds: 4, sharing: "quad", occupied: 3 },
-                    { number: "105", beds: 3, sharing: "triple", occupied: 1 }
-                ],
-                2: [
-                    { number: "201", beds: 2, sharing: "double", occupied: 1 },
-                    { number: "202", beds: 3, sharing: "triple", occupied: 3 },
-                    { number: "203", beds: 1, sharing: "single", occupied: 1 },
-                    { number: "204", beds: 4, sharing: "quad", occupied: 2 }
-                ],
-                3: [
-                    { number: "301", beds: 2, sharing: "double", occupied: 0 },
-                    { number: "302", beds: 3, sharing: "triple", occupied: 1 },
-                    { number: "303", beds: 1, sharing: "single", occupied: 0 }
-                ]
-            }
+            floors: 0,
+            rooms: {}
         };
 
         // 🚀 PRODUCTION-READY INITIALIZATION
@@ -1900,6 +2224,18 @@
             console.log('🚀 PG Manager Pro - Production Ready System Starting...');
             
             try {
+                // Load saved fee structure from localStorage
+                const savedFeeStructure = localStorage.getItem('pgFeeStructure');
+                if (savedFeeStructure) {
+                    try {
+                        const parsedFees = JSON.parse(savedFeeStructure);
+                        Object.assign(feeStructure, parsedFees);
+                        console.log('✅ Fee structure loaded from settings');
+                    } catch (e) {
+                        console.log('⚠️ Using default fee structure');
+                    }
+                }
+                
                 // Initialize database
                 await DatabaseManager.initDB();
                 console.log('✅ Database initialized');
@@ -2086,25 +2422,43 @@
             });
         }
 
-        // Generate floor plan
+        // 🏗️ DYNAMIC FLOOR PLAN MANAGEMENT SYSTEM
         function generateFloorPlan() {
-            const floorCount = document.getElementById('floorCount').value;
+            if (!currentSession.currentPG) return;
+            
+            const floorCount = parseInt(document.getElementById('floorCount').value) || 3;
             const floorConfig = document.getElementById('floorConfig');
             const roomLayout = document.getElementById('roomLayout');
             
-            // Generate floor configuration
+            // Update current PG's floor count
+            currentSession.currentPG.floors = floorCount;
+            
+            // Initialize floor plan if not exists
+            if (!currentSession.currentPG.floorPlan) {
+                currentSession.currentPG.floorPlan = {
+                    floors: floorCount,
+                    rooms: {}
+                };
+            }
+            
+            // Generate floor configuration interface
             floorConfig.innerHTML = '';
             for (let i = 1; i <= floorCount; i++) {
+                if (!currentSession.currentPG.floorPlan.rooms[i]) {
+                    currentSession.currentPG.floorPlan.rooms[i] = [];
+                }
+                
                 const floorDiv = document.createElement('div');
                 floorDiv.innerHTML = `
-                    <div class="border border-gray-300 rounded-lg p-4">
-                        <h5 class="font-semibold text-gray-800 mb-2">Floor ${i}</h5>
-                        <div class="space-y-2">
-                            <div>
-                                <label class="block text-xs text-gray-600">Number of Rooms</label>
-                                <input type="number" id="floor${i}Rooms" value="${floorPlan.rooms[i] ? floorPlan.rooms[i].length : 4}" min="0" max="10" 
-                                       class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500">
-                            </div>
+                    <div class="border border-gray-300 rounded-lg p-4 mb-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <h5 class="font-semibold text-gray-800">Floor ${i}</h5>
+                            <button onclick="addRoomToFloor(${i})" class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                                ➕ Add Room
+                            </button>
+                        </div>
+                        <div id="floor${i}Rooms" class="space-y-2">
+                            ${generateRoomConfigForFloor(i)}
                         </div>
                     </div>
                 `;
@@ -2112,24 +2466,150 @@
             }
             
             // Generate room layout display
+            displayRoomLayout();
+            
+            // Save to session
+            localStorage.setItem('pgManagerSession', JSON.stringify(currentSession));
+        }
+
+        function generateRoomConfigForFloor(floorNumber) {
+            if (!currentSession.currentPG.floorPlan.rooms[floorNumber]) {
+                return '<div class="text-gray-500 text-sm">No rooms added yet</div>';
+            }
+            
+            return currentSession.currentPG.floorPlan.rooms[floorNumber].map((room, index) => `
+                <div class="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
+                        <div>
+                            <label class="block text-xs text-gray-600">Room Number</label>
+                            <input type="text" value="${room.number}" onchange="updateRoom(${floorNumber}, ${index}, 'number', this.value)"
+                                   class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-600">Sharing Type</label>
+                            <select onchange="updateRoom(${floorNumber}, ${index}, 'sharing', this.value)" 
+                                    class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500">
+                                <option value="single" ${room.sharing === 'single' ? 'selected' : ''}>Single</option>
+                                <option value="double" ${room.sharing === 'double' ? 'selected' : ''}>Double</option>
+                                <option value="triple" ${room.sharing === 'triple' ? 'selected' : ''}>Triple</option>
+                                <option value="quad" ${room.sharing === 'quad' ? 'selected' : ''}>Quad</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-600">Beds</label>
+                            <input type="number" value="${room.beds}" min="1" max="6" onchange="updateRoom(${floorNumber}, ${index}, 'beds', parseInt(this.value))"
+                                   class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-600">Fee/Person</label>
+                            <div class="flex items-center space-x-1">
+                                <input type="number" value="${room.feePerPerson || getFeeBySharing(room.sharing)}" onchange="updateRoom(${floorNumber}, ${index}, 'feePerPerson', parseInt(this.value))"
+                                       class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500">
+                                <button onclick="removeRoom(${floorNumber}, ${index})" class="text-red-600 hover:text-red-800 text-sm">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-xs text-gray-600">
+                        Occupied: ${room.occupied || 0}/${room.beds} | 
+                        Vacant: ${(room.beds || 0) - (room.occupied || 0)} beds
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addRoomToFloor(floorNumber) {
+            if (!currentSession.currentPG.floorPlan.rooms[floorNumber]) {
+                currentSession.currentPG.floorPlan.rooms[floorNumber] = [];
+            }
+            
+            const roomNumber = `${floorNumber}${String(currentSession.currentPG.floorPlan.rooms[floorNumber].length + 1).padStart(2, '0')}`;
+            
+            const newRoom = {
+                number: roomNumber,
+                beds: 2,
+                sharing: 'double',
+                occupied: 0,
+                feePerPerson: getFeeBySharing('double')
+            };
+            
+            currentSession.currentPG.floorPlan.rooms[floorNumber].push(newRoom);
+            
+            // Refresh floor configuration
+            document.getElementById(`floor${floorNumber}Rooms`).innerHTML = generateRoomConfigForFloor(floorNumber);
+            
+            // Refresh room layout
+            displayRoomLayout();
+            
+            // Save to session
+            localStorage.setItem('pgManagerSession', JSON.stringify(currentSession));
+        }
+
+        function updateRoom(floorNumber, roomIndex, field, value) {
+            if (currentSession.currentPG.floorPlan.rooms[floorNumber] && currentSession.currentPG.floorPlan.rooms[floorNumber][roomIndex]) {
+                currentSession.currentPG.floorPlan.rooms[floorNumber][roomIndex][field] = value;
+                
+                // Auto-update fee when sharing type changes
+                if (field === 'sharing') {
+                    currentSession.currentPG.floorPlan.rooms[floorNumber][roomIndex].feePerPerson = getFeeBySharing(value);
+                    // Refresh the floor config to show updated fee
+                    document.getElementById(`floor${floorNumber}Rooms`).innerHTML = generateRoomConfigForFloor(floorNumber);
+                }
+                
+                // Auto-update beds when sharing type changes
+                if (field === 'sharing') {
+                    const bedsMap = { single: 1, double: 2, triple: 3, quad: 4 };
+                    currentSession.currentPG.floorPlan.rooms[floorNumber][roomIndex].beds = bedsMap[value] || 2;
+                    // Refresh the floor config to show updated beds
+                    document.getElementById(`floor${floorNumber}Rooms`).innerHTML = generateRoomConfigForFloor(floorNumber);
+                }
+                
+                // Refresh room layout
+                displayRoomLayout();
+                
+                // Save to session
+                localStorage.setItem('pgManagerSession', JSON.stringify(currentSession));
+            }
+        }
+
+        function removeRoom(floorNumber, roomIndex) {
+            if (confirm('Are you sure you want to remove this room?')) {
+                currentSession.currentPG.floorPlan.rooms[floorNumber].splice(roomIndex, 1);
+                
+                // Refresh floor configuration
+                document.getElementById(`floor${floorNumber}Rooms`).innerHTML = generateRoomConfigForFloor(floorNumber);
+                
+                // Refresh room layout
+                displayRoomLayout();
+                
+                // Save to session
+                localStorage.setItem('pgManagerSession', JSON.stringify(currentSession));
+            }
+        }
+
+        function displayRoomLayout() {
+            const roomLayout = document.getElementById('roomLayout');
+            if (!currentSession.currentPG.floorPlan) return;
+            
             roomLayout.innerHTML = '';
-            for (let floor = 1; floor <= floorCount; floor++) {
-                if (floorPlan.rooms[floor]) {
+            
+            for (let floor = 1; floor <= currentSession.currentPG.floorPlan.floors; floor++) {
+                if (currentSession.currentPG.floorPlan.rooms[floor] && currentSession.currentPG.floorPlan.rooms[floor].length > 0) {
                     const floorDiv = document.createElement('div');
                     floorDiv.innerHTML = `
-                        <div class="border border-gray-200 rounded-lg p-4">
+                        <div class="border border-gray-200 rounded-lg p-4 mb-4">
                             <h4 class="text-lg font-semibold text-gray-800 mb-4">Floor ${floor}</h4>
-                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                ${floorPlan.rooms[floor].map(room => `
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                ${currentSession.currentPG.floorPlan.rooms[floor].map(room => `
                                     <div class="border border-gray-300 rounded-lg p-3 ${room.occupied === room.beds ? 'bg-red-50 border-red-300' : room.occupied === 0 ? 'bg-green-50 border-green-300' : 'bg-yellow-50 border-yellow-300'}">
                                         <div class="text-center">
                                             <div class="text-sm font-semibold">${room.number}</div>
-                                            <div class="text-xs text-gray-600">${room.sharing}</div>
+                                            <div class="text-xs text-gray-600">${room.sharing} sharing</div>
+                                            <div class="text-xs text-blue-600 font-medium">₹${room.feePerPerson || getFeeBySharing(room.sharing)}/person</div>
                                             <div class="text-xs mt-1">
-                                                <span class="font-medium">${room.occupied}/${room.beds}</span> occupied
+                                                <span class="font-medium">${room.occupied || 0}/${room.beds}</span> occupied
                                             </div>
                                             <div class="mt-2">
-                                                ${room.occupied < room.beds ? 
+                                                ${(room.occupied || 0) < room.beds ? 
                                                     `<button onclick="assignBed('${room.number}')" class="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">Assign</button>` :
                                                     `<span class="text-xs text-red-600">Full</span>`
                                                 }
@@ -2142,6 +2622,16 @@
                     `;
                     roomLayout.appendChild(floorDiv);
                 }
+            }
+            
+            if (roomLayout.innerHTML === '') {
+                roomLayout.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <div class="text-4xl mb-4">🏗️</div>
+                        <div class="text-lg font-semibold mb-2">No Rooms Configured</div>
+                        <div class="text-sm">Add rooms to each floor using the configuration panel on the left</div>
+                    </div>
+                `;
             }
         }
 
@@ -2183,16 +2673,238 @@
 
         // Update dashboard statistics
         function updateDashboardStats() {
+            if (!currentSession.currentPG || !currentSession.currentPG.floorPlan) {
+                document.getElementById('totalTenants').textContent = '0';
+                document.getElementById('vacantBeds').textContent = '0';
+                document.getElementById('dueAmount').textContent = '₹0';
+                document.getElementById('futureVacancies').textContent = '0';
+                return;
+            }
+            
             const activeTenants = tenants.filter(t => t.status === 'active').length;
-            const totalBeds = Object.values(floorPlan.rooms).flat().reduce((sum, room) => sum + room.beds, 0);
-            const occupiedBeds = Object.values(floorPlan.rooms).flat().reduce((sum, room) => sum + room.occupied, 0);
+            
+            // Calculate total and vacant beds from current PG's floor plan
+            let totalBeds = 0;
+            let occupiedBeds = 0;
+            
+            Object.values(currentSession.currentPG.floorPlan.rooms).forEach(floor => {
+                floor.forEach(room => {
+                    totalBeds += room.beds || 0;
+                    occupiedBeds += room.occupied || 0;
+                });
+            });
+            
             const vacantBeds = totalBeds - occupiedBeds;
             const totalDue = tenants.filter(t => t.status === 'active').reduce((sum, t) => sum + (t.totalPending || 0), 0);
             
             document.getElementById('totalTenants').textContent = activeTenants;
             document.getElementById('vacantBeds').textContent = vacantBeds;
             document.getElementById('dueAmount').textContent = `₹${totalDue.toLocaleString()}`;
-            document.getElementById('futureVacancies').textContent = '3'; // This would be calculated based on vacancy notices
+            document.getElementById('futureVacancies').textContent = '0'; // This would be calculated based on vacancy notices
+        }
+
+        // Show vacant beds details
+        function showVacantBeds() {
+            if (!currentSession.currentPG || !currentSession.currentPG.floorPlan) {
+                alert('⚠️ No floor plan configured!\n\nPlease go to Rooms tab and configure your floor plan first.');
+                return;
+            }
+            
+            const vacantBedsContent = document.getElementById('vacantBedsContent');
+            let vacantRooms = [];
+            
+            // Collect all vacant beds
+            Object.keys(currentSession.currentPG.floorPlan.rooms).forEach(floorNumber => {
+                currentSession.currentPG.floorPlan.rooms[floorNumber].forEach(room => {
+                    const vacantCount = (room.beds || 0) - (room.occupied || 0);
+                    if (vacantCount > 0) {
+                        vacantRooms.push({
+                            floor: floorNumber,
+                            room: room.number,
+                            sharing: room.sharing,
+                            totalBeds: room.beds,
+                            occupied: room.occupied || 0,
+                            vacant: vacantCount,
+                            feePerPerson: room.feePerPerson || getFeeBySharing(room.sharing)
+                        });
+                    }
+                });
+            });
+            
+            if (vacantRooms.length === 0) {
+                vacantBedsContent.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <div class="text-4xl mb-4">🎉</div>
+                        <div class="text-lg font-semibold mb-2">All Beds Occupied!</div>
+                        <div class="text-sm">Your PG is running at full capacity</div>
+                    </div>
+                `;
+            } else {
+                const totalVacant = vacantRooms.reduce((sum, room) => sum + room.vacant, 0);
+                
+                vacantBedsContent.innerHTML = `
+                    <div class="mb-6">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h4 class="text-lg font-semibold text-blue-800">Total Vacant Beds</h4>
+                                    <p class="text-sm text-blue-600">${vacantRooms.length} rooms with vacant beds</p>
+                                </div>
+                                <div class="text-3xl font-bold text-blue-600">${totalVacant}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        ${vacantRooms.map(room => `
+                            <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex-1">
+                                        <div class="flex items-center space-x-4">
+                                            <div>
+                                                <div class="font-semibold text-gray-800">Room ${room.room}</div>
+                                                <div class="text-sm text-gray-600">Floor ${room.floor}</div>
+                                            </div>
+                                            <div>
+                                                <div class="text-sm text-gray-600">Sharing Type</div>
+                                                <div class="font-medium">${room.sharing.charAt(0).toUpperCase() + room.sharing.slice(1)}</div>
+                                            </div>
+                                            <div>
+                                                <div class="text-sm text-gray-600">Occupancy</div>
+                                                <div class="font-medium">${room.occupied}/${room.totalBeds}</div>
+                                            </div>
+                                            <div>
+                                                <div class="text-sm text-gray-600">Fee per Person</div>
+                                                <div class="font-medium text-green-600">₹${room.feePerPerson.toLocaleString()}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-2xl font-bold text-blue-600">${room.vacant}</div>
+                                        <div class="text-sm text-gray-600">vacant bed${room.vacant > 1 ? 's' : ''}</div>
+                                        <button onclick="assignBedFromModal('${room.room}')" class="mt-2 bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                                            Assign Bed
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <h5 class="font-semibold text-green-800 mb-2">💡 Quick Actions</h5>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <button onclick="closeModal('vacantBedsModal'); openModal('addTenantModal')" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+                                ➕ Add New Tenant
+                            </button>
+                            <button onclick="closeModal('vacantBedsModal'); document.querySelector('[data-tab=\"rooms\"]').click()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                                🏠 Manage Rooms
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            openModal('vacantBedsModal');
+        }
+
+        function assignBedFromModal(roomNumber) {
+            closeModal('vacantBedsModal');
+            // Pre-select the room in add tenant modal
+            openModal('addTenantModal');
+            
+            // Find and select the room in the dropdown
+            const roomSelect = document.getElementById('roomSelection');
+            for (let option of roomSelect.options) {
+                if (option.value.startsWith(roomNumber + '-')) {
+                    roomSelect.value = option.value;
+                    updateSharingTypeFromRoom();
+                    break;
+                }
+            }
+        }
+
+        // Update sharing type and fee when room is selected
+        function updateSharingTypeFromRoom() {
+            const roomSelect = document.getElementById('roomSelection');
+            const sharingTypeSelect = document.getElementById('sharingType');
+            const feeAmountField = document.getElementById('feeAmount');
+            
+            if (roomSelect.value) {
+                const selectedOption = roomSelect.options[roomSelect.selectedIndex];
+                const sharingType = selectedOption.getAttribute('data-sharing');
+                
+                if (sharingType) {
+                    // Update sharing type dropdown
+                    sharingTypeSelect.value = sharingType;
+                    
+                    // Update fee amount
+                    const dynamicFee = getFeeBySharing(sharingType);
+                    feeAmountField.value = dynamicFee;
+                    
+                    // Show room and fee info
+                    const roomInfo = document.createElement('div');
+                    roomInfo.id = 'roomFeeInfo';
+                    roomInfo.className = 'mt-2 p-3 bg-green-50 border border-green-200 rounded-lg';
+                    roomInfo.innerHTML = `
+                        <div class="text-sm text-green-700">
+                            <strong>🏠 Room Selected:</strong> ${selectedOption.textContent}<br>
+                            <strong>💰 Monthly Fee:</strong> ₹${dynamicFee.toLocaleString()}<br>
+                            <strong>🛏️ Sharing Type:</strong> ${sharingType.charAt(0).toUpperCase() + sharingType.slice(1)}
+                        </div>
+                    `;
+                    
+                    // Remove existing room info if present
+                    const existingInfo = document.getElementById('roomFeeInfo');
+                    if (existingInfo) {
+                        existingInfo.remove();
+                    }
+                    
+                    // Add new room info after the room selection field
+                    roomSelect.parentNode.appendChild(roomInfo);
+                    
+                    // Recalculate first month fee if other fields are filled
+                    calculateFirstMonthFee();
+                }
+            }
+        }
+
+        // Update fee based on sharing type selection
+        function updateFeeBasedOnSharing() {
+            const sharingType = document.getElementById('sharingType').value;
+            const feeAmountField = document.getElementById('feeAmount');
+            
+            if (sharingType && feeAmountField) {
+                const dynamicFee = getFeeBySharing(sharingType);
+                feeAmountField.value = dynamicFee;
+                
+                // Show fee breakdown with sharing type info
+                const feeInfo = document.createElement('div');
+                feeInfo.id = 'sharingFeeInfo';
+                feeInfo.className = 'mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg';
+                feeInfo.innerHTML = `
+                    <div class="text-sm text-blue-700">
+                        <strong>💰 Fee Structure:</strong><br>
+                        • Single Occupancy: ₹9,000/month<br>
+                        • Double Sharing: ₹7,000/month<br>
+                        • Triple Sharing: ₹6,000/month<br>
+                        • Quad Sharing: ₹5,000/month<br><br>
+                        <strong>Selected:</strong> ${sharingType.charAt(0).toUpperCase() + sharingType.slice(1)} - ₹${dynamicFee.toLocaleString()}/month
+                    </div>
+                `;
+                
+                // Remove existing fee info if present
+                const existingInfo = document.getElementById('sharingFeeInfo');
+                if (existingInfo) {
+                    existingInfo.remove();
+                }
+                
+                // Add new fee info after the fee amount field
+                feeAmountField.parentNode.appendChild(feeInfo);
+                
+                // Recalculate first month fee if other fields are filled
+                calculateFirstMonthFee();
+            }
         }
 
         // Dynamic due date and fee calculation functions
@@ -2865,7 +3577,16 @@
         }
 
         function saveSettings() {
-            alert('Settings saved successfully!');
+            // Update fee structure from settings
+            feeStructure.single = parseInt(document.getElementById('singleFee').value) || 9000;
+            feeStructure.double = parseInt(document.getElementById('doubleFee').value) || 7000;
+            feeStructure.triple = parseInt(document.getElementById('tripleFee').value) || 6000;
+            feeStructure.quad = parseInt(document.getElementById('quadFee').value) || 5000;
+            
+            // Save to localStorage for persistence
+            localStorage.setItem('pgFeeStructure', JSON.stringify(feeStructure));
+            
+            alert(`💾 SETTINGS SAVED SUCCESSFULLY!\n\n💰 Updated Fee Structure:\n• Single Occupancy: ₹${feeStructure.single.toLocaleString()}/month\n• Double Sharing: ₹${feeStructure.double.toLocaleString()}/month\n• Triple Sharing: ₹${feeStructure.triple.toLocaleString()}/month\n• Quad Sharing: ₹${feeStructure.quad.toLocaleString()}/month\n\n✅ New fees will apply to future tenant additions.`);
         }
 
         function previousPage() {
@@ -2967,5 +3688,5 @@
         // Run once on page load to ensure current month dues are generated
         generateMonthlyDues();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'965b9506f49f4fd4',t:'MTc1MzYxMzQ5Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'965bc65e646a897b',t:'MTc1MzYxNTUxMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
